@@ -64,6 +64,13 @@ exportResults <- function(outputFolder,
                     minCellCount = minCellCount,
                     maxCores = maxCores)
   
+  ## Aug 10: add function for imputing positive controls
+  exportPositiveControls(outputFolder = outputFolder,
+                         exportFolder = exportFolder,
+                         databaseId = databaseId,
+                         effectSizesToImpute = c(1.5, 2, 4),
+                         maxCores = maxCores)
+  
   # Add all to zip file -------------------------------------------------------------------------------
   ParallelLogger::logInfo("Adding results to zip file")
   zipName <- normalizePath(file.path(exportFolder, sprintf("Results_%s.zip", databaseId)), mustWork = FALSE)
@@ -827,3 +834,47 @@ exportDiagnostics <- function(outputFolder,
   fileName <- file.path(exportFolder, "monthly_rate.csv")
   readr::write_csv(montlyRates, fileName)
 }
+
+
+exportPositiveControls <- function(outputFolder,
+                                   exportFolder,
+                                   databaseId,
+                                   effectSizesToImpute = c(1.5, 2, 4), 
+                                   maxCores = parallel::detectCores()-1){
+  
+  ParallelLogger::logInfo('Start imputing positive controls.')
+  
+  estimatePath = file.path(exportFolder, 'estimate.csv')
+  estimates = readr::read_csv(estimatePath)
+  
+  estimates <- imputePositiveControls(estimates)
+  ParallelLogger::logInfo('Finished imputing positive controls.')
+  
+  imputedPositiveControlOutcome <- estimates %>%
+    filter(.data$effectSize > 1) %>%
+    distinct(.data$exposureId, .data$outcomeId, .data$outcomeName, .data$effectSize, .data$negativeControlId)
+  
+  estimates <- estimates %>%
+    select(-.data$outcomeName, -.data$effectSize, -.data$negativeControlId)
+  
+  PCOutcomeFilePath = file.path(exportFolder, 'imputed_positive_control_outcome.csv')
+  if(file.exists(PCOutcomeFilePath)){
+    pcsAlreadySaved = readr::read_csv(PCOutcomeFilePath)
+    imputedPositiveControlOutcome <- imputedPositiveControlOutcome %>%
+      anti_join(pcsAlreadySaved, by = c("exposureId", "outcomeId"))
+  }
+  if(nrow(imputedPositiveControlOutcome) > 0){
+    ParallelLogger::logInfo('Saving imputed positive control outcomes list.')
+    readr::write_csv(imputedPositiveControlOutcome, file = PCOutcomeFilePath)
+  }
+  rm(imputedPositiveControlOutcome)
+  
+  estimatesIpcPath = file.path(exportFolder, 'estimate_imputed_pcs.csv')
+  if(file.exists(estimatesIpcPath)){
+    file.remove(estimatesIpcPath)
+  }
+  readr::write_csv(estimates, estimatesIpcPath)
+  rm(estimates) # free up memory
+  
+}
+
