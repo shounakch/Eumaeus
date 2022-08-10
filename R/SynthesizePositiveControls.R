@@ -145,6 +145,7 @@ createAllControlsFile <- function(connectionDetails,
   negativeControls$trueEffectSizeFirstExposure <- 1
   negativeControls$oldOutcomeId <- negativeControls$outcomeId
   
+  exposuresOfInterest <- loadExposuresofInterest()
   allControls <- negativeControls %>%
     inner_join(exposuresOfInterest %>% select(-.data$exposureName), by = "exposureId")
   
