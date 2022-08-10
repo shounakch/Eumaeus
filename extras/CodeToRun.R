@@ -130,6 +130,7 @@ databaseDescription <- "IBM MarketScan® Multi-State Medicaid Database (MDCD) ad
 # CohortDiagnostics::preMergeDiagnosticsFiles(file.path(outputFolder, "cohortDiagnostics"))
 # CohortDiagnostics::launchDiagnosticsExplorer(file.path(outputFolder, "cohortDiagnostics"))
 # 
+
 execute(connectionDetails = connectionDetails,
         cdmDatabaseSchema = cdmDatabaseSchema,
         cohortDatabaseSchema = cohortDatabaseSchema,
@@ -141,22 +142,24 @@ execute(connectionDetails = connectionDetails,
         maxCores = maxCores,
         exposureIds = getExposuresOfInterest()$exposureId,
         verifyDependencies = TRUE,
-        createCohorts = F,
-        synthesizePositiveControls = F,
+        createCohorts = TRUE,
+        createAllControls = TRUE,
         runCohortMethod = F,
-        runSccs = F,
+        runSccs = T,
         runCaseControl = F,
-        runHistoricalComparator = F,
+        runHistoricalComparator = T,
         generateDiagnostics = F,
         computeCriticalValues = TRUE,
         createDbCharacterization = F,
-        exportResults = F)
+        exportResults = TRUE)
 
-uploadResults(outputFolder = outputFolder,
-              privateKeyFileName = "c:/home/keyfiles/study-data-site-covid19.dat",
-              userName = "study-data-site-covid19")
 
-# JnJ specific code to store database version:
-source("extras/GetDatabaseVersion.R")
-version <- getDatabaseVersion(connectionDetails, cdmDatabaseSchema)
-readr::write_csv(version, file.path(outputFolder, "version.csv"))
+# # upload results to database server if there is one that was already set up
+# uploadResults(outputFolder = outputFolder,
+#               privateKeyFileName = "c:/home/keyfiles/study-data-site-covid19.dat",
+#               userName = "study-data-site-covid19")
+
+# # JnJ specific code to store database version:
+# source("extras/GetDatabaseVersion.R")
+# version <- getDatabaseVersion(connectionDetails, cdmDatabaseSchema)
+# readr::write_csv(version, file.path(outputFolder, "version.csv"))
