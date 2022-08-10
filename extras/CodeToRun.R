@@ -73,7 +73,7 @@ cohortTable = 'cohort_fbu2'
 # CohortDiagnostics::launchDiagnosticsExplorer(file.path(outputFolder, "cohortDiagnostics"))
 # 
 
-execute(connectionDetails = connectionDetails,
+execute(connectionDetails = conn,
         cdmDatabaseSchema = cdmDatabaseSchema,
         cohortDatabaseSchema = cohortDatabaseSchema,
         cohortTable = cohortTable,
