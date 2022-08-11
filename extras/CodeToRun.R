@@ -16,22 +16,14 @@
 
 library(Eumaeus)
 
-options(andromedaTempFolder = "D:/andromedaTemp")
+options(andromedaTempFolder = "E:/andromedaTemp")
 options(sqlRenderTempEmulationSchema = NULL)
 
 maxCores <- 4
 
-# # For bulk uploading synthetic outcomes:
-# Sys.setenv("AWS_OBJECT_KEY" = "bulk")
-# Sys.setenv("AWS_ACCESS_KEY_ID" = keyring::key_get("bulkUploadS3Key"))
-# Sys.setenv("AWS_SECRET_ACCESS_KEY" = keyring::key_get("bulkUploadS3Secret"))
-# Sys.setenv("AWS_BUCKET_NAME" = keyring::key_get("bulkUploadS3Bucket"))
-# Sys.setenv("AWS_DEFAULT_REGION" = "us-east-1")
-# Sys.setenv("AWS_SSE_TYPE" = "AES256")
-# Sys.setenv("DATABASE_CONNECTOR_BULK_UPLOAD" = TRUE)
 
 # Database details-----
-# example: JnJ MDCR
+# example: JnJ MDCR (should replace with relevant database info)
 cdmDatabaseSchema <- "cdm_truven_mdcr_v1838"
 serverSuffix <- "truven_mdcr"
 cohortDatabaseSchema <- "scratch_fbu2"
@@ -43,6 +35,7 @@ outputFolder <- "E:/eumaeusTest_mdcr" # DONE
 
 
 # fill out connection details ------------
+# example: JnJ epi server (should replace with relevant commands)
 conn <- DatabaseConnector::createConnectionDetails(
   dbms = "redshift",
   server = paste0(keyring::key_get("epi_server"), "/", !!serverSuffix),
@@ -73,6 +66,7 @@ cohortTable = 'cohort_fbu2'
 # CohortDiagnostics::launchDiagnosticsExplorer(file.path(outputFolder, "cohortDiagnostics"))
 # 
 
+# the main execution function
 execute(connectionDetails = conn,
         cdmDatabaseSchema = cdmDatabaseSchema,
         cohortDatabaseSchema = cohortDatabaseSchema,
