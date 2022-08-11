@@ -79,10 +79,10 @@
     },
     "DatabaseConnector": {
       "Package": "DatabaseConnector",
-      "Version": "4.0.2",
+      "Version": "5.0.4",
       "Source": "Repository",
       "Repository": "CRAN",
-      "Hash": "d8fea683d387c35a2f20d14cd03329df"
+      "Hash": "53cac2a00e0f13e24ba7f198718ef409"
     },
     "EmpiricalCalibration": {
       "Package": "EmpiricalCalibration",
@@ -201,14 +201,16 @@
     },
     "SelfControlledCaseSeries": {
       "Package": "SelfControlledCaseSeries",
-      "Version": "3.1.0",
+      "Version": "3.4.0",
       "Source": "GitHub",
+      "Remotes": "ohdsi/Eunomia",
       "RemoteType": "github",
       "RemoteHost": "api.github.com",
       "RemoteRepo": "SelfControlledCaseSeries",
       "RemoteUsername": "ohdsi",
-      "RemoteRef": "v3.1.0",
-      "Hash": "c7498689d3289eeb122a6a3481c02ab6"
+      "RemoteRef": "develop",
+      "RemoteSha": "b70e89930a57d461e2fa480356e386eb75de7d0d",
+      "Hash": "afea55f039a86a0ec50d10a4e00dec79"
     },
     "Sequential": {
       "Package": "Sequential",
@@ -219,10 +221,10 @@
     },
     "SqlRender": {
       "Package": "SqlRender",
-      "Version": "1.7.0",
+      "Version": "1.9.2",
       "Source": "Repository",
       "Repository": "CRAN",
-      "Hash": "c9f77eea223a6942eea0072b72e6ceb9"
+      "Hash": "290e1e6423e66868a846d781740cc43b"
     },
     "askpass": {
       "Package": "askpass",
@@ -933,10 +935,10 @@
     },
     "vctrs": {
       "Package": "vctrs",
-      "Version": "0.3.6",
+      "Version": "0.4.1",
       "Source": "Repository",
       "Repository": "CRAN",
-      "Hash": "5cf1957f93076c19fdc81d01409d240b"
+      "Hash": "8b54f22e2a58c4f275479c92ce041a57"
     },
     "viridisLite": {
       "Package": "viridisLite",
