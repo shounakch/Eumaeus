@@ -11,10 +11,10 @@
   "Packages": {
     "Andromeda": {
       "Package": "Andromeda",
-      "Version": "0.5.0",
+      "Version": "0.6.1",
       "Source": "Repository",
       "Repository": "CRAN",
-      "Hash": "770d773d049662d2d1d13780f6f5e11c"
+      "Hash": "ae741b16de25b2ab0a87b9f38e159282"
     },
     "BH": {
       "Package": "BH",
@@ -207,10 +207,10 @@
       "RemoteType": "github",
       "RemoteHost": "api.github.com",
       "RemoteRepo": "SelfControlledCaseSeries",
-      "RemoteUsername": "ohdsi",
+      "RemoteUsername": "OHDSI",
       "RemoteRef": "develop",
-      "RemoteSha": "b70e89930a57d461e2fa480356e386eb75de7d0d",
-      "Hash": "afea55f039a86a0ec50d10a4e00dec79"
+      "RemoteSha": "12f515ba1cd174f8634fa4d95ca779bd9bcb2dc9",
+      "Hash": "f9fb1f2667b74c7b336df0cee48c8b7f"
     },
     "Sequential": {
       "Package": "Sequential",
