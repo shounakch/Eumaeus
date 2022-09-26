@@ -19,7 +19,7 @@ library(Eumaeus)
 options(andromedaTempFolder = "E:/andromedaTemp")
 options(sqlRenderTempEmulationSchema = NULL)
 
-maxCores <- 4
+maxCores <- 1
 
 
 # Database details-----
@@ -31,7 +31,7 @@ databaseId<- "MDCR"
 databaseName <- "IBM Health MarketScan Medicare Supplemental and Coordination of Benefits Database"
 databaseDescription <- "IBM Health MarketScan® Medicare Supplemental and Coordination of Benefits Database (MDCR) represents health services of retirees in the United States with primary or Medicare supplemental coverage through privately insured fee-for-service, point-of-service, or capitated health plans. These data include adjudicated health insurance claims (e.g. inpatient, outpatient, and outpatient pharmacy). Additionally, it captures laboratory tests for a subset of the covered lives."
 tablePrefix <- "eumaeus_mdcr"
-outputFolder <- "E:/eumaeusTest_mdcr2" # DONE
+outputFolder <- "E:/eumaeusTest_mdcr8" # DONE
 
 # another example: JnJ MDCD
 # cdmDatabaseSchema <- "cdm_truven_mdcd_v1714"
@@ -41,7 +41,7 @@ outputFolder <- "E:/eumaeusTest_mdcr2" # DONE
 # databaseName <- "IBM Health MarketScan® Multi-State Medicaid Database"
 # databaseDescription <- "IBM MarketScan® Multi-State Medicaid Database (MDCD) adjudicated US health insurance claims for Medicaid enrollees from multiple states and includes hospital discharge diagnoses, outpatient diagnoses and procedures, and outpatient pharmacy claims as well as ethnicity and Medicare eligibility. Members maintain their same identifier even if they leave the system for a brief period however the dataset lacks lab data."
 # tablePrefix <- "legend_monotherapy_mdcd"
-# outputFolder <- "E:/eumaeusTest_mdcd" # DONE
+# outputFolder <- "E:/eumaeusTest_mdcd2" # DONE
 
 
 # fill out connection details ------------
