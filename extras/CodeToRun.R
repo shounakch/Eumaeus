@@ -31,7 +31,7 @@ databaseId<- "MDCR"
 databaseName <- "IBM Health MarketScan Medicare Supplemental and Coordination of Benefits Database"
 databaseDescription <- "IBM Health MarketScan® Medicare Supplemental and Coordination of Benefits Database (MDCR) represents health services of retirees in the United States with primary or Medicare supplemental coverage through privately insured fee-for-service, point-of-service, or capitated health plans. These data include adjudicated health insurance claims (e.g. inpatient, outpatient, and outpatient pharmacy). Additionally, it captures laboratory tests for a subset of the covered lives."
 tablePrefix <- "eumaeus_mdcr"
-outputFolder <- "E:/eumaeusTest_mdcr8" # DONE
+outputFolder <- "E:/eumaeusTest_mdcr9" # DONE
 
 # another example: JnJ MDCD
 # cdmDatabaseSchema <- "cdm_truven_mdcd_v1714"

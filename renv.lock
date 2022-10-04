@@ -209,8 +209,8 @@
       "RemoteRepo": "SelfControlledCaseSeries",
       "RemoteUsername": "OHDSI",
       "RemoteRef": "develop",
-      "RemoteSha": "12f515ba1cd174f8634fa4d95ca779bd9bcb2dc9",
-      "Hash": "f9fb1f2667b74c7b336df0cee48c8b7f"
+      "RemoteSha": "4d9bd3075c203b23932f04c3ad6faa9c2aa79301",
+      "Hash": "4e6f6dfc146b87e7a8a2813f3ce34699"
     },
     "Sequential": {
       "Package": "Sequential",
