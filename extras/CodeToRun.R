@@ -96,7 +96,7 @@ execute(connectionDetails = conn,
         runHistoricalComparator = TRUE,
         generateDiagnostics = F,
         computeCriticalValues = TRUE,
-        createDbCharacterization = F,
+        createDbCharacterization = TRUE,
         exportResults = TRUE)
 
 
