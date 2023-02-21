@@ -230,7 +230,7 @@ exportLikelihoodProfiles <- function(outputFolder,
   
   ParallelLogger::logInfo("  Constructing master profile table")
   masterProfileTable <- Andromeda::andromeda()
-  batchSize <- 100 
+  batchSize <- 100
   
   # ParallelLogger::logInfo("  - Adding CohortMethod profiles")
   # modelFiles <- list.files(file.path(outputFolder, "cohortMethod"), 
