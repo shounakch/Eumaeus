@@ -230,7 +230,7 @@ exportLikelihoodProfiles <- function(outputFolder,
   
   ParallelLogger::logInfo("  Constructing master profile table")
   masterProfileTable <- Andromeda::andromeda()
-  batchSize <- 10000 # set it smaller!
+  batchSize <- 100 
   
   # ParallelLogger::logInfo("  - Adding CohortMethod profiles")
   # modelFiles <- list.files(file.path(outputFolder, "cohortMethod"), 
@@ -308,7 +308,12 @@ exportLikelihoodProfiles <- function(outputFolder,
         select(-.data$targetOutcomes, -.data$expectedOutcomes, -.data$irr) %>%
         mutate(databaseId = databaseId,
                method = "HistoricalComparator")
-      Andromeda::appendToTable(masterProfileTable$profiles, rows)
+      if (is.null(masterProfileTable$profiles)) {
+        masterProfileTable$profiles <- rows
+      }else{
+        Andromeda::appendToTable(masterProfileTable$profiles, rows)
+      }
+      
     }
     return(NULL)
   }
