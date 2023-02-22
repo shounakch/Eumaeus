@@ -46,14 +46,14 @@ imputePositiveControls <- function(estimates,
                                     estimates$periodId, 
                                     estimates$exposureId))
   message("Computing calibrated one-sided p-values and LLRs")
-  estimates <- ParallelLogger::clusterApply(cluster, subsets, calibrate)
+  estimates <- ParallelLogger::clusterApply(cluster, subsets, calibrateForPC)
   estimates <- bind_rows(estimates)
   ParallelLogger::stopCluster(cluster)
   return(estimates)
 }
 
 # subset = subsets[[1]]
-calibrate <- function(subset) {
+calibrateForPC <- function(subset) {
   ncs <- subset %>%
     filter(.data$effectSize == 1 & !is.na(.data$seLogRr))
   if (nrow(ncs) > 5) {
