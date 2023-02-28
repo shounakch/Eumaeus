@@ -852,7 +852,11 @@ exportPositiveControls <- function(outputFolder,
   estimatePath = file.path(exportFolder, 'estimate.csv')
   estimates = readr::read_csv(estimatePath)
   
-  estimates <- imputePositiveControls(estimates)
+  # debug: change column name format
+  colnames(estimates) = SqlRender::snakeCaseToCamelCase(colnames(estimates))
+  
+  estimates <- imputePositiveControls(estimates,
+                                      maxCores = maxCores)
   ParallelLogger::logInfo('Finished imputing positive controls.')
   
   imputedPositiveControlOutcome <- estimates %>%
