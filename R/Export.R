@@ -882,6 +882,9 @@ exportPositiveControls <- function(outputFolder,
   if(file.exists(estimatesIpcPath)){
     file.remove(estimatesIpcPath)
   }
+  
+  # reformat column names back to snake case (for consistency)
+  colnames(estimates) = SqlRender::camelCaseToSnakeCase(colnames(estimates))
   readr::write_csv(estimates, estimatesIpcPath)
   rm(estimates) # free up memory
   
