@@ -228,6 +228,14 @@ exportLikelihoodProfiles <- function(outputFolder,
                                      databaseId) {
   ParallelLogger::logInfo("Exporting likelihood profiles")
   
+  # March 2023 lazy check to see if likelihood_profile.csv is already exported
+  # if so, skip profiling
+  lpPath = file.path(exportFolder, 'likelihood_profile.csv')
+  if(file.exists(lpPath)){
+    ParallelLogger::logInfo("  Likelihood profiles already exported! Skipped.")
+    return()
+  }
+  
   ParallelLogger::logInfo("  Constructing master profile table")
   masterProfileTable <- Andromeda::andromeda()
   batchSize <- 100
@@ -849,10 +857,17 @@ exportPositiveControls <- function(outputFolder,
   
   ParallelLogger::logInfo('Start imputing positive controls.')
   
+  # load estimates (with negative controls only)
   estimatePath = file.path(exportFolder, 'estimate.csv')
   estimates = readr::read_csv(estimatePath)
   
-  # debug: change column name format
+  # load negative control info file
+  ncInfoPath = file.path(exportFolder, 'negative_control_outcome.csv')
+  ncInfo = readr::read_csv(ncInfoPath)
+  # join to add `outcomeName` to estimates table
+  estimates = estimates %>% inner_join(ncInfo, by = 'outcome_id')
+  
+  # change column name format to camel case
   colnames(estimates) = SqlRender::snakeCaseToCamelCase(colnames(estimates))
   
   estimates <- imputePositiveControls(estimates,
