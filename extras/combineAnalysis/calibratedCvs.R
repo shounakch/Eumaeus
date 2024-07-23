@@ -38,15 +38,18 @@ allEstimatesImputedPcsDescription <- data.table::fread(input = "E:/Shounak_R/Eum
 
 ############ ------ PLOT CODES -------#############
 
-databaseId = "OptumEhr"
-exposureId = 21184
-trueEffectSize = 2
-analysisIds = list("HistoricalComparatorAnalysisId" = 14,
+#maxTimePeriod=9 for Flu (21215), H1N1 (21184); 12 for Zoster (211983), HPV (211833); 7 for Covid (21216, 21217)
+
+databaseId = "IBM_MDCD"
+exposureId = 211833
+maxTimePeriod = 12 #depends on exposureId
+trueEffectSize = 4
+analysisIds = list("HistoricalComparatorAnalysisId" = 4,
                    "SCCSAnalysisId" = 2,
                    "CaseControlId" = 2,
                    "CohortMethodId" = 2)
-maxTimePeriod = 9
-exposureName = "H1N1"
+
+exposureName = "HPV (first or second)"
 
 plotType1ErrorAndPowerAcrossTime(databaseId,
                                  exposureId,
