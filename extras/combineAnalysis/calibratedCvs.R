@@ -31,14 +31,23 @@ library(ggplot2)
 
 allEstimates <- data.table::fread(input = "E:/Shounak_R/EumaeusAnalysis/allPastEstimates.csv",
                                   sep = ",")
+allEstimatesImputedPcs <- data.table::fread(input = "E:/Shounak_R/EumaeusAnalysis/allPastEstimatesImputedPcs.csv",
+                                            sep = ",")
+
+maxTimePeriod = 9
+databaseId = "OptumEhr"
+methodName = "SCCS"
+exposureId = 21184
+trueEffectSize = 2
+analysisId = 2
 
 type1ErrorPowerOldExposuresMaxSPRT <- function(maxTimePeriod,
                                                databaseId,
-                                               outcomeIds,
                                                methodName,
                                                exposureId,
+                                               analysisId,
                                                trueEffectSize,
-                                               allEstimatesFile) {
+                                               allEstimates) {
   
   library(dplyr)
   
@@ -78,26 +87,218 @@ type1ErrorPowerOldExposuresMaxSPRT <- function(maxTimePeriod,
       mutate(llr = ifelse(logRr <= 0, 0, dnorm(logRr, logRr, seLogRr, log=TRUE) - 
                             dnorm(0, logRr, seLogRr, log=TRUE)))
     
+    # groupSizes <- list()
+    # z <- list()
+    # 
+    # for(i in 1:length(outcomeIds)) {
+    #   
+    #   outcomeId = outcomeIds[i]
+    #   
+    #   subsetOutcome <- methodEstimates %>% filter(outcomeId == !!outcomeId)
+    #   
+    #   if(nrow(subsetOutcome) > 0) {
+    #     
+    #     necessaryQuantitiesOutcome <- necessaryQuantities(methodName, subsetOutcome)
+    #     
+    #     groupSizes[[i]] = necessaryQuantitiesOutcome$groupSizes
+    #     z[[i]] = necessaryQuantitiesOutcome$z
+    #     
+    #   } else {
+    #     
+    #     groupSizes[[i]] = NA
+    #     z[[i]] = NA
+    #     
+    #   }
+    #   
+    # }
+    # 
+    # type1Errors = rep(0, maxTimePeriod)
+    # powers = rep(0, maxTimePeriod)
+    # 
+    # for(seqId in 1:maxTimePeriod) {
+    #   
+    #   subsetData_t <- methodEstimates %>% filter(seqId == !!seqId) #data for time t
+    #   
+    #   calibratedCvs = rep(0, length(outcomeIds))
+    #   nullModels <- list()
+    #   observedIndices = (!is.na(subsetData_t$seLogRr)) 
+    #   nullMeans = rep(0, length(outcomeIds))
+    #   nullSds = rep(0, length(outcomeIds))
+    #   
+    #   for(i in 1:length(outcomeIds)) {
+    #     
+    #     # Obtain null distribution for empirical calibration
+    #     
+    #     observedIndices_i = observedIndices #indices for which we have information, without i
+    #     observedIndices_i[i] = FALSE
+    #     
+    #     if(length(observedIndices_i) >= 3) {
+    #       
+    #       nullModel = EmpiricalCalibration::fitNull(subsetData_t$logRr[observedIndices_i],
+    #                                                 subsetData_t$seLogRr[observedIndices_i])
+    #       nullModels[[i]] = EmpiricalCalibration::convertNullToErrorModel(nullModel)
+    #       nullMeans[i] = nullModel[[1]]
+    #       nullSds[i] = nullModel[[2]]
+    #       
+    #       # Obtain calibrated critical values
+    #       
+    #       calibratedCvs[i] = EmpiricalCalibration::computeCvBinomial(groupSizes = groupSizes[[i]],
+    #                                                                  z = z[[i]],
+    #                                                                  nullMean = nullMeans[i],
+    #                                                                  nullSd = nullSds[i], 
+    #                                                                  sampleSize = 10^4)
+    #       
+    #       
+    #     } else {
+    #       
+    #       nullMeans[i] = NA
+    #       nullSds[i] = NA
+    #       calibratedCvs[i] = NA
+    #       
+    #     }
+    #     
+    #   }
+    #   
+    #   type1Error = mean(subsetData_t$llr[!is.na(subsetData_t$llr)] > calibratedCvs[!is.na(subsetData_t$llr)])
+    #   type1Errors[seqId] = type1Error
+    #   
+    #   # Now compute power
+    #   
+    #   imputedLogRr = subsetData_t$logRr + log(trueEffectSize)
+    #   imputedSeLogRr = subsetData_t$seLogRr
+    #   imputedLlr = rep(0, length(outcomeIds))
+    #   
+    #   for(i in 1:length(outcomeIds)) {
+    #     
+    #     if(!is.na(subsetData_t$seLogRr[i])) {
+    #       
+    #       if(imputedLogRr[i] <= 0) {
+    #         
+    #         imputedLlr[i] = 0
+    #         
+    #       }else {
+    #         
+    #         imputedLlr[i] = dnorm(imputedLogRr[i], imputedLogRr[i], imputedSeLogRr[i], log = TRUE) - 
+    #           dnorm(0, imputedLogRr[i], imputedSeLogRr[i], log = TRUE)
+    #         
+    #       }
+    #       
+    #     } else {
+    #       
+    #       imputedLlr[i] = NA
+    #       
+    #     }
+    #     
+    #   }
+    #   
+    #   powerMethod = mean(imputedLlr[!is.na(imputedLlr)] > calibratedCvs[!is.na(imputedLlr)])
+    #   powers[seqId] = powerMethod
+    #   
+    # }
+    # 
+    # output = list("type1Errors" = type1Errors,
+    #               "powers" = powers)
+    # 
+    # return(output)
+    
+    type1ErrorAndPower <- type1ErrorPowerSubsetOldExposureMaxSPRT(methodEstimates,
+                                                                  outcomeIds)
+    
   } else {
     
     methodEstimates <- allEstimates %>% dplyr::filter(databaseId == !!databaseId,
                                                       exposureId == !!exposureId,
-                                                      method == !!method,
+                                                      method == !!methodName,
                                                       analysisId == !!analysisId,
-                                                      periodId == !!t,
                                                       outcomeId %in% outcomeIds)
     
+    methodEstimatesImputedPcs <- allEstimatesImputedPcs %>% dplyr::filter(databaseId == !!databaseId,
+                                                                          exposureId == !!exposureId,
+                                                                          method == !!methodName,
+                                                                          analysisId == !!analysisId,
+                                                                          trueEffectSize == !!trueEffectSize)
+    
+    imputedPcOutcomeIds <- imputedPcsDescription$outcomeId[imputedPcsDescription$effectSize == trueEffectSize]
+    
+    type1Errors = rep(0, maxTimePeriod)
+    powers = rep(0, maxTimePeriod)
+    
+    for(t in 1:maxTimePeriod) {
+      
+      subsetData_t <- methodEstimates %>% filter(periodId == !!t)
+      
+      availableIndices = !is.na(subsetData_t$calibratedLlr)
+      
+      if(length(availableIndices) > 3) {
+        
+        type1Error = mean(subsetData_t$calibratedLlr[availableIndices] >
+                            subsetData_t$criticalValue[availableIndices])
+        
+        type1Errors[t] = type1Error
+        
+      } else {
+        
+        type1Errors[t] = NA
+        
+      }
+      
+      # Calculate power
+      
+      subsetData_t_imputedPc <- methodEstimatesImputedPcs %>% filter(periodId == !!t,
+                                                                     outcomeId %in% imputedPcOutcomeIds)
+      
+      availableIndicesImputedPcs <- !is.na(subsetData_t_imputedPc$calibratedLlr)
+      
+      if(length(availableIndicesImputedPcs) > 3) {
+        
+        powerMethod = mean(subsetData_t_imputedPc$calibratedLlr[availableIndicesImputedPcs] >
+                             subsetData_t_imputedPc$criticalValue[availableIndicesImputedPcs])
+        
+        powers[t] = powerMethod
+        
+      } else {
+        
+        powers[t] = NA
+        
+      }
+      
+    }
+    
+    type1ErrorAndPower <- list("type1Errors" = type1Errors,
+                              "powers" = powers)
+    
   }
+  
+  return(type1ErrorAndPower)
+  
+}
+
+#compute type 1 error and power on subset
+type1ErrorPowerSubsetOldExposureMaxSPRT <- function(methodEstimates,
+                                                    outcomeIds) {
+  
+  groupSizes <- list()
+  z <- list()
   
   for(i in 1:length(outcomeIds)) {
     
     outcomeId = outcomeIds[i]
     
     subsetOutcome <- methodEstimates %>% filter(outcomeId == !!outcomeId)
-    necessaryQuantitiesOutcome <- necessaryQuantities(methodName, subsetOutcome)
     
-    groupSizes[[i]] = necessaryQuantitiesOutcome$groupSizes
-    z[[i]] = necessaryQuantitiesOutcome$z
+    if(nrow(subsetOutcome) > 0) {
+      
+      necessaryQuantitiesOutcome <- necessaryQuantities(methodName, subsetOutcome)
+      
+      groupSizes[[i]] = necessaryQuantitiesOutcome$groupSizes
+      z[[i]] = necessaryQuantitiesOutcome$z
+      
+    } else {
+      
+      groupSizes[[i]] = NA
+      z[[i]] = NA
+      
+    }
     
   }
   
@@ -106,7 +307,7 @@ type1ErrorPowerOldExposuresMaxSPRT <- function(maxTimePeriod,
   
   for(seqId in 1:maxTimePeriod) {
     
-    subsetData_t <- methodEstimates %>% filter(seqId == !!seqId) #data for time t
+    subsetData_t <- methodEstimates %>% filter(seqId == !!seqId) #data for time t = seqId
     
     calibratedCvs = rep(0, length(outcomeIds))
     nullModels <- list()
