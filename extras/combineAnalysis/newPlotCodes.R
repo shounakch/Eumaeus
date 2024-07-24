@@ -1,64 +1,88 @@
-library(DatabaseConnector)
-library(dplyr)
-library(ggplot2)
+#Calculate power and type 1 error on subset 
+type1ErrorAndPower <- function(relevantData) {
+  
+  #fit leave-one-out null distributions
+  nullModels <- list()
+  calibratedCis <- matrix(0, nrow = nrow(relevantData), ncol = 2)
+  colnames(calibratedCis) = c("calibratedCi95Lb", "calibratedCi95Ub")
+  
+  for(i in 1:nrow(relevantData)) {
+    
+    #fit the null
+    nullModel = EmpiricalCalibration::fitNull(relevantData$logRr[-i],
+                                              relevantData$seLogRr[-i])
+    nullModels[[i]] = EmpiricalCalibration::convertNullToErrorModel(nullModel)
+    
+    #calibrate 95% CI
+    calibratedCi = EmpiricalCalibration::calibrateConfidenceInterval(relevantData$logRr[i],
+                                                                     relevantData$seLogRr[i],
+                                                                     nullModels[[i]]) #log scale
+    
+    calibratedCis[i,] = exp(as.numeric(calibratedCi[c(2,3)]))
+    
+  }
+  
+  calibratedCis = as.data.frame(calibratedCis)
+  
+  #calculate type 1 error = proportion of calibrated CIs that do not contain 1
+  
+  type1Error = 1 - length(which((calibratedCis$calibratedCi95Lb <= 1) & (1 <= calibratedCis$calibratedCi95Ub))) / 
+    nrow(calibratedCis)
+  
+  if(is.null(trueEffectSize)) {
+    
+    output = type1Error
+    
+  } else {
+    
+    #Now calculate type 2 error - uses trueEffectSize
+    # #First calibrate using trueEffectSize
+    # 
+    # imputedNullModels <- list()
+    # imputedCalibratedCis <- matrix(0, nrow = nrow(relevantData), ncol = 2)
+    # colnames(imputedCalibratedCis) = c("imputedCalibratedCi95Lb", "imputedCalibratedCi95Ub")
+    # 
+    # for(i in 1:nrow(relevantData)) {
+    #   
+    #   #fit the null
+    #   imputedNullModel = EmpiricalCalibration::fitNull(relevantData$logRr[-i] + log(trueEffectSize),
+    #                                             relevantData$seLogRr[-i])
+    #   imputedNullModels[[i]] = EmpiricalCalibration::convertNullToErrorModel(imputedNullModel)
+    #   
+    #   #calibrate 95% CI
+    #   imputedCalibratedCi = EmpiricalCalibration::calibrateConfidenceInterval(relevantData$logRr[i] + log(trueEffectSize),
+    #                                                                    relevantData$seLogRr[i],
+    #                                                                    imputedNullModels[[i]]) #log scale
+    #   
+    #   imputedCalibratedCis[i,] = exp(as.numeric(imputedCalibratedCi[c(2,3)]))
+    #   
+    # }
+    
+    imputedCalibratedCis = trueEffectSize * calibratedCis
+    colnames(imputedCalibratedCis) = c("imputedCalibratedCi95Lb", "imputedCalibratedCi95Ub")
+    
+    imputedCalibratedCis = as.data.frame(imputedCalibratedCis)
+    
+    #type 2 error = proportion of imputed calibrated CIs that CONTAIN 1
+    
+    type2Error = length(which((imputedCalibratedCis$imputedCalibratedCi95Lb <= 1) & 
+                                (1 <= imputedCalibratedCis$imputedCalibratedCi95Ub))) / 
+      nrow(calibratedCis)
+    
+    powerMethod = 1 - type2Error
+    
+    output = c(type1Error, powerMethod)
+    
+  }
+  
+  return(output)
+  
+}
 
-eumaeusConnectionDetails <- DatabaseConnector::createConnectionDetails(
-  dbms = "postgresql",
-  server = paste(keyring::key_get("eumaeusServer"),
-                 keyring::key_get("eumaeusDatabase"),
-                 sep = "/"),
-  user = keyring::key_get("eumaeusUser"),
-  password = keyring::key_get("eumaeusPassword"),
-  pathToDriver = "D:/drivers/")
 
-connection = DatabaseConnector::connect(eumaeusConnectionDetails)
 
-#### Query database (refer to 'Example code' in ``ohdsi-studies/Eumaeus/docs/ResultsSchema.html'')
 
-sql <- "
-SELECT *
-FROM eumaeus.estimate;
-"
-
-allEstimates <- querySql(connection, sql, snakeCaseToCamelCase = TRUE)
-#head(allEstimates)
-
-# #### Example: get only the historical comparator analyses for exposureId = 21185, databaseId = "IBM_MDCR", analysisId = 14
-# 
-# allHcAnalyses_exposureId_21185_data_IBMMDCR_analysisId_14 = allEstimates %>% filter(exposureId == 21185,
-#                                                                                     databaseId == "IBM_MDCR",
-#                                                                                     analysisId == 14,
-#                                                                                     method == "HistoricalComparator")
-
-#### Function to plot type 1 error and power vs time
-
-databaseId = "OptumDod"
-# exposureId = 21215 #compare Flu (all, 21215) vs HPV (first or second, 211833)
-# exposureName = "Seasonal Flu (All)"
-# exposureId = 211833 #compare Flu (all, 21215) vs HPV (first or second, 211833)
-# exposureName = "HPV (First or Second)"
-# exposureId = 211983 #compare Flu (all, 21215) vs HPV (first or second, 211833)
-# exposureName = "Zoster (First or Second)"
-exposureId = 21184 #compare Flu (all, 21215) vs HPV (first or second, 211833)
-exposureName = "H1N1"
-trueEffectSize = 2
-maxTimePeriod = 9 #depends on the exposureId
-
-analysisIds = list("HistoricalComparatorAnalysisId" = 14,
-                   "SCCSAnalysisId" = 2,
-                   "CaseControlId" = 2,
-                   "CohortMethodId" = 2)
-
-plotList = plotType1ErrorAndPowerAcrossTime(databaseId,
-                                            exposureId,
-                                            trueEffectSize,
-                                            allEstimates,
-                                            analysisIds,
-                                            maxTimePeriod,
-                                            exposureName)
-
-######################################################################
-
+############# ----------------------- Plots below are without MaxSPRT adjustment. ------------############
 #function to plot type 1 error and power across time
 plotType1ErrorAndPowerAcrossTime <- function(databaseId,
                                              exposureId,
@@ -146,7 +170,7 @@ plotType1ErrorAndPowerAcrossTime <- function(databaseId,
 # negativeControlIds = read.csv("E:/Shounak_R/Eumaeus/inst/settings/NegativeControls.csv")
 # ncIds = negativeControlIds$outcomeId
 
-#big error concerning baseexposureid when using concurrent comparator
+#big error concerning baseexposureid when using concurrent comparator (probably resolved, double check)
 type1ErrorAndPowerMethodWise <- function(databaseId,
                                          exposureId,
                                          method,
@@ -215,7 +239,7 @@ type1ErrorAndPowerMethodWise <- function(databaseId,
                                                 relevantData$ci95Ub))) == 0)
     relevantData = relevantData[selectedIndices,]
     
-    if(nrow(relevantData) <= 2) {
+    if(nrow(relevantData) <= 5) {
       
       return(c(NA, NA))
       
@@ -436,27 +460,6 @@ type1ErrorAndPowerMethodWiseCovid <- function(databaseId,
 }
 
 #plot function for covid * all methods
-
-library(dplyr)
-library(ggplot2)
-
-databaseId = "IBM_MDCR"
-exposureId = 21216
-exposureName = "Covid-19 (BNT126b2)"
-trueEffectSize = 4
-analysisIds = list("HistoricalComparatorAnalysisId" = 4, #haven't run filtered HC yet locally on covid (7/12/2024)
-                   "SCCSAnalysisId" = 2,
-                   "CaseControlId" = 2,
-                   "CohortMethodId" = 2)
-maxTimePeriod = 7
-
-plotSave = plotType1ErrorAndPowerAcrossTimeCovid(databaseId,
-                                                 exposureId,
-                                                 trueEffectSize,
-                                                 analysisIds,
-                                                 maxTimePeriod,
-                                                 exposureName)
-
 plotType1ErrorAndPowerAcrossTimeCovid <- function(databaseId,
                                                   exposureId,
                                                   trueEffectSize,
@@ -528,3 +531,4 @@ plotType1ErrorAndPowerAcrossTimeCovid <- function(databaseId,
   
 }
 
+#plot systematic error distributions across methods and exposures
