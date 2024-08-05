@@ -74,3 +74,6 @@ CaseControl,3,"Age & sex adjusted, using random controls",1-42
 CaseControl,4,"Age & sex matched controls",1-42
 CaseControl,5,"Age & sex adjusted, using random controls",0-1
 CaseControl,6,"Age & sex matched controls",0-1
+ConcurrentComparator,1,"Matched comparator",0-7
+ConcurrentComparator,2,"Matched comparator",1-21
+ConcurrentComparator,3,"Matched comparator",1-28

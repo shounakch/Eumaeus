@@ -5,6 +5,8 @@ atlasId,atlasName,cohortId,name
 21215,Seasonal flu vaccination (All),21215,AllFluVaccines
 21198,Zoster vaccination (Shingrix),21198,Shingrix
 21183,HPV vaccination (Gardasil 9),21183,Gardasil9
+21219,COVID-19 vaccination (BNT126b2),21219,ComirnatyCovid19
+21221,COVID-19 vaccination (mRNA-1273),21221,SpikevaxCovid19
 21216,Seasonal flu exclusion cohort,21216,SeasonalFluExclusion
 20503,HPV exclusion cohort,20503,HpvExclusion
 21217,Zoster exclusion cohort,21217,ZosterExclusion
