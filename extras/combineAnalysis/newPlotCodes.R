@@ -1,4 +1,4 @@
-#Calculate power and type 1 error on subset 
+#Calculate power and type 1 error on subset (NOT USING MAXSPRT) 
 type1ErrorAndPower <- function(relevantData) {
   
   #fit leave-one-out null distributions
@@ -96,7 +96,7 @@ plotType1ErrorAndPowerAcrossTime <- function(databaseId,
   ncIds = negativeControlIds$outcomeId
   
   #maxTimePeriod = max(unique((allEstimates %>% filter(exposureId == exposureId))$periodId))
-  methodNames = c("ConcurrentComparator", "HistoricalComparator", "CohortMethod", "CaseControl", "SCCS")
+  methodNames = c("ConcurrentComparator_1-28Days", "HistoricalComparator", "CohortMethod", "CaseControl", "SCCS")
   analysisIds = c(1, #dummy analysisId for concurrent comparator
                   analysisIds$HistoricalComparatorAnalysisId,
                   analysisIds$CohortMethodId,
