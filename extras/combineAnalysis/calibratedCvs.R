@@ -15,7 +15,8 @@ plotType1ErrorAndPowerAcrossTime <- function(databaseId,
                                              allEstimatesImputedPcsDescription = NULL,
                                              analysisIds,
                                              maxTimePeriod,
-                                             exposureName) { #maxTimePeriod to be input by user for now
+                                             exposureName,
+                                             force = rep(FALSE, 5)) { #maxTimePeriod to be input by user for now
   
   # negativeControlIds = read.csv("E:/Shounak_R/Eumaeus/inst/settings/NegativeControls.csv")
   # ncIds = negativeControlIds$outcomeId
@@ -30,7 +31,7 @@ plotType1ErrorAndPowerAcrossTime <- function(databaseId,
                   analysisIds$CaseControlId,
                   analysisIds$SCCSAnalysisId) 
   
-  savedObjectPath = paste0("E:/Shounak_R/EumaeusAnalysis/type1power_",
+  savedObjectPath = paste0("E:/Shounak_R/EumaeusAnalysis/type1ErrorAndPowerObjectsPlotting/type1power_",
                            databaseId,
                            "_exposureId=",
                            exposureId,
@@ -38,14 +39,26 @@ plotType1ErrorAndPowerAcrossTime <- function(databaseId,
                            trueEffectSize,
                            ".RData")
   
-  if(!file.exists(savedObjectPath)) {
-  #if(TRUE) {
+  outputDf = NULL
+  
+  i = 1
+  for(i in 1:length(methodNames)) {
     
-    outputDf = NULL
+    method = methodNames[i]
     
-    for(i in 1:length(methodNames)) {
-      
-      method = methodNames[i]
+    methodType1PowerStorPath = paste0("E:/Shounak_R/EumaeusAnalysis/type1ErrorAndPowerObjectsPlotting/",
+                                      method,
+                                      "_",
+                                      databaseId,
+                                      "_exposureId=",
+                                      exposureId,
+                                      "_trueEffectSize=",
+                                      trueEffectSize,
+                                      "_analysisId=",
+                                      analysisIds[i],
+                                      ".RData")
+    
+    if(!file.exists(methodType1PowerStorPath) | force[i]) { 
       
       type1ErrorAndPowerValues = type1ErrorPowerOldExposuresMaxSPRT(maxTimePeriod = maxTimePeriod,
                                                                     databaseId = databaseId,
@@ -57,62 +70,72 @@ plotType1ErrorAndPowerAcrossTime <- function(databaseId,
                                                                     allEstimatesImputedPcs = allEstimatesImputedPcs,
                                                                     allEstimatesImputedPcsDescription = allEstimatesImputedPcsDescription)
       
-      subType1ErrorDf = type1ErrorAndPowerValues$type1Errors
-      subPowerDf = type1ErrorAndPowerValues$powers
-      subType1ErrorUncalibratedDf = type1ErrorAndPowerValues$type1ErrorsUncalibrated
+      saveRDS(type1ErrorAndPowerValues, methodType1PowerStorPath)
       
-      if(method == "ConcurrentComparator_1-28Days") {
-        
-        method = "ConcurrentComparator"
-        
-      }
+    } else {
       
-      subOutputDf = data.frame("Type1Error" = subType1ErrorDf, 
-                               "Power" = subPowerDf, 
-                               "Type1ErrorUncalibrated" = subType1ErrorUncalibratedDf,
-                               "Method" = method)
-      outputDf = dplyr::bind_rows(outputDf, subOutputDf)
+      type1ErrorAndPowerValues = readRDS(methodType1PowerStorPath)
       
     }
     
-    outputDf$Months = rep(1:maxTimePeriod, length(methodNames))
+    subType1ErrorDf = type1ErrorAndPowerValues$type1Errors
+    subPowerDf = type1ErrorAndPowerValues$powers
+    subType1ErrorUncalibratedDf = type1ErrorAndPowerValues$type1ErrorsUncalibrated
     
-    saveRDS(outputDf, file = paste0("E:/Shounak_R/EumaeusAnalysis/type1power_",
-                                    databaseId,
-                                    "_exposureId=",
-                                    exposureId,
-                                    "_trueEffect=",
-                                    trueEffectSize,
-                                    ".RData"))
+    if(method == "ConcurrentComparator_1-28Days") {
+      
+      method = "ConcurrentComparator"
+      
+    }
     
-  } else {
+    subType1Error = proportionEvaluation(subType1ErrorDf)
+    subType1ErrorUncalibrated = proportionEvaluation(subType1ErrorUncalibratedDf)
+    subPower = proportionEvaluation(subPowerDf)
     
-    outputDf = readRDS(savedObjectPath)
+    subOutputDf = data.frame("Type1Error" = subType1Error, 
+                             "Power" = subPower, 
+                             "Type1ErrorUncalibrated" = subType1ErrorUncalibrated,
+                             "Method" = method)
+    outputDf = dplyr::bind_rows(outputDf, subOutputDf)
     
   }
+  
+  outputDf$Months = rep(1:maxTimePeriod, length(methodNames))
+  
+  # saveRDS(outputDf, file = paste0("E:/Shounak_R/EumaeusAnalysis/type1ErrorAndPowerObjectsPlotting/type1power_",
+  #                                 databaseId,
+  #                                 "_exposureId=",
+  #                                 exposureId,
+  #                                 "_trueEffect=",
+  #                                 trueEffectSize,
+  #                                 ".RData"))
+  
+  outputDf = outputDf %>% mutate_all(~ifelse(is.nan(.), NA, .))
   
   type1ErrorPlot <- ggplot(outputDf, aes(x = Months, y = Type1Error, group = Method)) + 
     geom_line(aes(color=Method), linewidth = 3) + geom_point(size = 2)  +
     #geom_line(aes(x = Months, y = Type1ErrorUncalibrated, color=Method), linetype = "dotted", linewidth = 2) +
     geom_hline(aes(yintercept = 0.05), linewidth = 2, linetype = "dashed") +
-    scale_y_continuous("Type 1 Error", breaks = c(0, 0.05, 0.1, 0.2), limits = c(0, 0.2)) +
+    scale_y_continuous("Type 1 Error", breaks = c(0, 0.05, seq(0.1, 0.5, by=0.1)), limits = c(0, 0.5)) +
     scale_color_manual(values = wesanderson::wes_palette("Darjeeling1")) +
     ggtitle(paste0(exposureName, ", ", databaseId)) + scale_x_continuous(breaks = 1:maxTimePeriod) +
     theme_minimal() +
     theme(text = element_text(size=50),
-          axis.text.y = element_text(margin = margin(r = 10)))
+          axis.text.y = element_text(margin = margin(r = 5)))
   
   print(type1ErrorPlot)
   
   type1ErrorUnCalibratedPlot <- ggplot(outputDf, aes(x = Months, y = Type1ErrorUncalibrated, group = Method)) + 
     geom_line(aes(color=Method), linewidth = 3) + geom_point(size = 2)  +
     geom_hline(aes(yintercept = 0.05), linewidth = 2, linetype = "dashed") +
-    scale_y_continuous("Type 1 Error, Uncalibrated", breaks = round(c(0, 0.05, 0.1, 0.2, max(outputDf$Type1ErrorUncalibrated)), 2), limits = c(0, max(outputDf$Type1ErrorUncalibrated))) +
+    scale_y_continuous("Type 1 Error, Uncalibrated", 
+                       breaks = round(c(0, 0.05, seq(0.1, max(outputDf$Type1ErrorUncalibrated, na.rm=T), by = 0.1)), 2), 
+                       limits = c(0, max(outputDf$Type1ErrorUncalibrated, na.rm=T))) +
     scale_color_manual(values = wesanderson::wes_palette("Darjeeling1")) +
     ggtitle(paste0(exposureName, ", ", databaseId)) + scale_x_continuous(breaks = 1:maxTimePeriod) +
     theme_minimal() +
     theme(text = element_text(size=50),
-          axis.text.y = element_text(margin = margin(r = 10))) #using 36
+          axis.text.y = element_text(margin = margin(r = 5)))
   
   print(type1ErrorUnCalibratedPlot)
   
@@ -121,16 +144,63 @@ plotType1ErrorAndPowerAcrossTime <- function(databaseId,
     geom_point(size = 2) + 
     theme_minimal() +
     scale_color_manual(values = wesanderson::wes_palette("Darjeeling1")) +
-    scale_y_continuous(breaks = seq(0, 1, length.out = 5), limits = c(0,1)) +
+    scale_y_continuous("Power", breaks = seq(0, 1, length.out = 5), limits = c(0,1)) +
     ggtitle(paste0(exposureName, ", ", databaseId, ", trueEffectSize = ", trueEffectSize)) + scale_x_continuous(breaks = 1:maxTimePeriod) +
     theme(text = element_text(size=50),
-          axis.text.y = element_text(margin = margin(r = 10)))
+          axis.text.y = element_text(margin = margin(r = 5)))
   
   print(powerPlot)
   
-  output = list("Type1ErrorPlot" = type1ErrorPlot,
-                "PowerPlot" = powerPlot,
-                "OutputDf" = outputDf)
+  # powerOverType1ErrorPlot <- ggplot(outputDf, aes(x = Months, y = Power / Type1Error, group = Method)) + 
+  #   geom_line(aes(color = Method), linewidth = 3) + 
+  #   geom_point(size = 2) + 
+  #   theme_minimal() +
+  #   scale_color_manual(values = wesanderson::wes_palette("Darjeeling1")) +
+  #   scale_y_continuous("Power") +
+  #   ggtitle(paste0(exposureName, ", ", databaseId, ", trueEffectSize = ", trueEffectSize)) + scale_x_continuous(breaks = 1:maxTimePeriod) +
+  #   theme(text = element_text(size=50),
+  #         axis.text.y = element_text(margin = margin(r = 5)))
+  # 
+  # print(powerOverType1ErrorPlot)
+  
+  # type1ErrorPlot <- ggplot(outputDf, aes(x = Months, y = Type1Error, group = Method)) + 
+  #   geom_line(aes(color=Method), linewidth = 3) + geom_point(size = 2)  +
+  #   #geom_line(aes(x = Months, y = Type1ErrorUncalibrated, color=Method), linetype = "dotted", linewidth = 2) +
+  #   geom_hline(aes(yintercept = 0.05), linewidth = 2, linetype = "dashed") +
+  #   scale_y_continuous("Type 1 Error", breaks = c(0, 0.05, 0.1, 0.2), limits = c(0, 0.2)) +
+  #   scale_color_manual(values = wesanderson::wes_palette("Darjeeling1")) +
+  #   ggtitle(paste0(exposureName, ", ", databaseId)) + scale_x_continuous(breaks = 1:maxTimePeriod) +
+  #   theme_minimal() +
+  #   theme(text = element_text(size=50),
+  #         axis.text.y = element_text(margin = margin(r = 10)))
+  # 
+  # print(type1ErrorPlot)
+  # 
+  # type1ErrorUnCalibratedPlot <- ggplot(outputDf, aes(x = Months, y = Type1ErrorUncalibrated, group = Method)) + 
+  #   geom_line(aes(color=Method), linewidth = 3) + geom_point(size = 2)  +
+  #   geom_hline(aes(yintercept = 0.05), linewidth = 2, linetype = "dashed") +
+  #   scale_y_continuous("Type 1 Error, Uncalibrated", breaks = round(c(0, 0.05, 0.1, 0.2, max(outputDf$Type1ErrorUncalibrated)), 2), limits = c(0, max(outputDf$Type1ErrorUncalibrated))) +
+  #   scale_color_manual(values = wesanderson::wes_palette("Darjeeling1")) +
+  #   ggtitle(paste0(exposureName, ", ", databaseId)) + scale_x_continuous(breaks = 1:maxTimePeriod) +
+  #   theme_minimal() +
+  #   theme(text = element_text(size=50),
+  #         axis.text.y = element_text(margin = margin(r = 10))) #using 36
+  # 
+  # print(type1ErrorUnCalibratedPlot)
+  # 
+  # powerPlot <- ggplot(outputDf, aes(x = Months, y = Power, group = Method)) + 
+  #   geom_line(aes(color = Method), linewidth = 3) + 
+  #   geom_point(size = 2) + 
+  #   theme_minimal() +
+  #   scale_color_manual(values = wesanderson::wes_palette("Darjeeling1")) +
+  #   scale_y_continuous(breaks = seq(0, 1, length.out = 5), limits = c(0,1)) +
+  #   ggtitle(paste0(exposureName, ", ", databaseId, ", trueEffectSize = ", trueEffectSize)) + scale_x_continuous(breaks = 1:maxTimePeriod) +
+  #   theme(text = element_text(size=50),
+  #         axis.text.y = element_text(margin = margin(r = 10)))
+  # 
+  # print(powerPlot)
+  
+  output = list("OutputDf" = outputDf)
   
   return(output)
   
@@ -237,62 +307,128 @@ type1ErrorPowerOldExposuresMaxSPRT <- function(maxTimePeriod,
                                                       analysisId == !!analysisId,
                                                       outcomeId %in% outcomeIds)
     
+    imputedPcOutcomeIds <- allEstimatesImputedPcsDescription$outcomeId[allEstimatesImputedPcsDescription$effectSize == trueEffectSize]
+    
     methodEstimatesImputedPcs <- allEstimatesImputedPcs %>% dplyr::filter(databaseId == !!databaseId,
                                                                           exposureId == !!exposureId,
                                                                           method == !!methodName,
                                                                           analysisId == !!analysisId,
-                                                                          trueEffectSize == !!trueEffectSize)
+                                                                          trueEffectSize == !!trueEffectSize,
+                                                                          outcomeId %in% imputedPcOutcomeIds)
     
-    imputedPcOutcomeIds <- allEstimatesImputedPcsDescription$outcomeId[allEstimatesImputedPcsDescription$effectSize == trueEffectSize]
     
-    type1Errors = rep(0, maxTimePeriod)
-    powers = rep(0, maxTimePeriod)
-    type1ErrorsUncalibrated = rep(0, maxTimePeriod)
+    type1Errors = matrix(NA, nrow = length(outcomeIds), ncol = maxTimePeriod)
+    type1ErrorsUncalibrated = matrix(NA, nrow = length(outcomeIds), ncol = maxTimePeriod)
+    powers = matrix(NA, nrow = length(imputedPcOutcomeIds), ncol = maxTimePeriod)
+    
+    # type1Errors = rep(0, maxTimePeriod)
+    # powers = rep(0, maxTimePeriod)
+    # type1ErrorsUncalibrated = rep(0, maxTimePeriod)
     
     for(t in 1:maxTimePeriod) {
       
       subsetData_t <- methodEstimates %>% filter(periodId == !!t)
       
-      availableIndices = !is.na(subsetData_t$calibratedLlr) &
-        !is.na(subsetData_t$criticalValue)
+      # availableIndices = !is.na(subsetData_t$calibratedLlr) &
+      #   !is.na(subsetData_t$criticalValue)
       
-      if(sum(availableIndices) > 3) {
+      for(outcomeId in outcomeIds) {
         
-        type1Error = mean(subsetData_t$calibratedLlr[availableIndices] >
-                            subsetData_t$criticalValue[availableIndices])
-        type1ErrorUncalibrated = mean(subsetData_t$llr[availableIndices] >
-                                        subsetData_t$criticalValue[availableIndices])
+        outcomeIdIndex = which(outcomeIds == outcomeId)
         
-        type1Errors[t] = type1Error
-        type1ErrorsUncalibrated[t] = type1ErrorUncalibrated
-        
-      } else {
-        
-        type1Errors[t] = NA
-        type1ErrorsUncalibrated[t] = NA
+        if(!(outcomeId %in% subsetData_t$outcomeId)) {
+          
+          type1Errors[outcomeIdIndex,t] <- NA
+          type1ErrorsUncalibrated[outcomeIdIndex,t] <- NA
+          
+        } else {
+          
+          outIdIndexSubset = which(subsetData_t$outcomeId == outcomeId)
+          
+          if(is.na(subsetData_t$calibratedLlr[outIdIndexSubset]) | is.na(subsetData_t$criticalValue[outIdIndexSubset])) {
+            
+            type1Errors[outcomeIdIndex,t] <- NA
+            type1ErrorsUncalibrated[outcomeIdIndex,t] <- NA
+            
+          } else {
+            
+            type1Errors[outcomeIdIndex,t] <- ifelse(subsetData_t$calibratedLlr[outIdIndexSubset] > 
+                                                      subsetData_t$criticalValue[outIdIndexSubset], 1, 0)
+            type1ErrorsUncalibrated[outcomeIdIndex,t] <- ifelse(subsetData_t$llr[outIdIndexSubset] > 
+                                                                  subsetData_t$criticalValue[outIdIndexSubset], 1, 0)
+            
+            
+          }
+          
+        }
         
       }
+      
+      # if(sum(availableIndices) > 3) {
+      #   
+      #   type1Error = mean(subsetData_t$calibratedLlr[availableIndices] >
+      #                       subsetData_t$criticalValue[availableIndices])
+      #   type1ErrorUncalibrated = mean(subsetData_t$llr[availableIndices] >
+      #                                   subsetData_t$criticalValue[availableIndices])
+      #   
+      #   type1Errors[t] = type1Error
+      #   type1ErrorsUncalibrated[t] = type1ErrorUncalibrated
+      #   
+      # } else {
+      #   
+      #   type1Errors[t] = NA
+      #   type1ErrorsUncalibrated[t] = NA
+      #   
+      # }
       
       # Calculate power
       
-      subsetData_t_imputedPc <- methodEstimatesImputedPcs %>% filter(periodId == !!t,
-                                                                     outcomeId %in% imputedPcOutcomeIds)
+      subsetData_t_imputedPc <- methodEstimatesImputedPcs %>% filter(periodId == !!t)
       
-      availableIndicesImputedPcs <- !is.na(subsetData_t_imputedPc$calibratedLlr) &
-        !is.na(subsetData_t_imputedPc$criticalValue)
-      
-      if(sum(availableIndicesImputedPcs) > 3) {
+      #imputedPcOutcomeId = imputedPcOutcomeIds[1]
+      for(imputedPcOutcomeId in imputedPcOutcomeIds) {
         
-        powerMethod = mean(subsetData_t_imputedPc$calibratedLlr[availableIndicesImputedPcs] >
-                             subsetData_t_imputedPc$criticalValue[availableIndicesImputedPcs])
+        imputedPcOutcomeIdIndex = which(imputedPcOutcomeIds == imputedPcOutcomeId)
         
-        powers[t] = powerMethod
-        
-      } else {
-        
-        powers[t] = NA
+        if(!(imputedPcOutcomeId %in% subsetData_t_imputedPc$outcomeId)) {
+          
+          powers[imputedPcOutcomeIdIndex,t] <- NA
+          
+        } else {
+          
+          outIdIndexSubset = which(subsetData_t_imputedPc$outcomeId == imputedPcOutcomeId)
+          
+          if(is.na(subsetData_t_imputedPc$calibratedLlr[outIdIndexSubset]) | is.na(subsetData_t_imputedPc$criticalValue[outIdIndexSubset])) {
+            
+            powers[imputedPcOutcomeIdIndex,t] <- NA
+            
+          } else {
+            
+            powers[imputedPcOutcomeIdIndex,t] <- ifelse(subsetData_t_imputedPc$calibratedLlr[outIdIndexSubset] > 
+                                                          subsetData_t_imputedPc$criticalValue[outIdIndexSubset], 1, 0)
+            
+            
+          }
+          
+        }
         
       }
+      
+      # availableIndicesImputedPcs <- !is.na(subsetData_t_imputedPc$calibratedLlr) &
+      #   !is.na(subsetData_t_imputedPc$criticalValue)
+      
+      # if(sum(availableIndicesImputedPcs) > 3) {
+      #   
+      #   powerMethod = mean(subsetData_t_imputedPc$calibratedLlr[availableIndicesImputedPcs] >
+      #                        subsetData_t_imputedPc$criticalValue[availableIndicesImputedPcs])
+      #   
+      #   powers[t] = powerMethod
+      #   
+      # } else {
+      #   
+      #   powers[t] = NA
+      #   
+      # }
       
     }
     
@@ -338,10 +474,14 @@ type1ErrorPowerSubsetOldExposureMaxSPRT <- function(methodEstimates,
     
   }
   
-  type1Errors = rep(0, maxTimePeriod)
-  powers = rep(0, maxTimePeriod)
-  type1ErrorsUncalibrated = rep(0, maxTimePeriod)
-  powersUncalibrated = rep(0, maxTimePeriod)
+  type1Errors = matrix(NA, nrow = length(outcomeIds), ncol = maxTimePeriod)
+  type1ErrorsUncalibrated = matrix(NA, nrow = length(outcomeIds), ncol = maxTimePeriod)
+  powers = matrix(NA, nrow = length(outcomeIds), ncol = maxTimePeriod)
+  
+  # type1Errors = rep(0, maxTimePeriod)
+  # powers = rep(0, maxTimePeriod)
+  # type1ErrorsUncalibrated = rep(0, maxTimePeriod)
+  #powersUncalibrated = rep(0, maxTimePeriod)
   
   for(seqId in 1:maxTimePeriod) {
     
@@ -350,7 +490,7 @@ type1ErrorPowerSubsetOldExposureMaxSPRT <- function(methodEstimates,
     calibratedCvs = rep(0, length(outcomeIds))
     uncalibratedCvs <- rep(0, length(outcomeIds))
     nullModels <- list()
-    observedIndices = (!is.na(subsetData_t$seLogRr)) & (abs(subsetData_t$logRr) <= 5) 
+    observedIndices = (!is.na(subsetData_t$seLogRr)) & (abs(subsetData_t$logRr) <= 5) #indices for which we have information
     nullMeans = rep(0, length(outcomeIds))
     nullSds = rep(0, length(outcomeIds))
     
@@ -358,19 +498,25 @@ type1ErrorPowerSubsetOldExposureMaxSPRT <- function(methodEstimates,
       
       # Obtain null distribution for empirical calibration
       
-      observedIndices_i = observedIndices #indices for which we have information, without i
-      observedIndices_i[i] = FALSE
+      observedIndices_i = observedIndices 
+      observedIndices_i[i] = FALSE #indices for which we have information, without i
       
       if(sum(observedIndices_i) >= 3) {
         
         nullModel = EmpiricalCalibration::fitNull(subsetData_t$logRr[observedIndices_i],
                                                   subsetData_t$seLogRr[observedIndices_i])
+        
+        # nullModel = EmpiricalCalibration::fitMcmcNull(subsetData_t$logRr[observedIndices_i],
+        #                                               subsetData_t$seLogRr[observedIndices_i],
+        #                                               iter = 10^4)
+        
         #nullModels[[i]] = EmpiricalCalibration::convertNullToErrorModel(nullModel)
         #nullMeans[i] = nullModel[[1]]
         #nullSds[i] = nullModel[[2]]
         
         nullMeans[i] = nullModel[1]
         nullSds[i] = nullModel[2]
+        #nullSds[i] = 1 / sqrt(nullModel[2])
         
         # Obtain calibrated critical values
         
@@ -379,13 +525,13 @@ type1ErrorPowerSubsetOldExposureMaxSPRT <- function(methodEstimates,
           calibratedCvs[i] = EmpiricalCalibration::computeCvBinomial(groupSizes = groupSizes[[i]],
                                                                      z = z[[i]],
                                                                      nullMean = nullMeans[i],
-                                                                     nullSd = nullSds[i], 
+                                                                     nullSd = nullSds[i],
                                                                      sampleSize = 10^4)
           
           uncalibratedCvs[i] = EmpiricalCalibration::computeCvBinomial(groupSizes = groupSizes[[i]],
                                                                        z = z[[i]],
                                                                        nullMean = 0,
-                                                                       nullSd = 0, 
+                                                                       nullSd = 0,
                                                                        sampleSize = 10^4)
           
         } else {
@@ -404,17 +550,29 @@ type1ErrorPowerSubsetOldExposureMaxSPRT <- function(methodEstimates,
         
       }
       
+      if(!is.na(subsetData_t$llr[i]) & !is.na(calibratedCvs[i])) {
+        
+        type1Errors[i,seqId] = ifelse(subsetData_t$llr[i] > calibratedCvs[i], 1, 0)
+        type1ErrorsUncalibrated[i,seqId] = ifelse(subsetData_t$llr[i] > uncalibratedCvs[i], 1, 0)
+        
+      } else {
+        
+        type1Errors[i,seqId] = NA
+        type1ErrorsUncalibrated[i,seqId] - NA
+        
+      }
+      
     }
     
-    type1Error = mean(subsetData_t$llr[!is.na(subsetData_t$llr)] > 
-                        calibratedCvs[!is.na(subsetData_t$llr)],
-                      na.rm=TRUE)
-    type1Errors[seqId] = type1Error
-    
-    type1ErrorUncalibrated = mean(subsetData_t$llr[!is.na(subsetData_t$llr)] > 
-                                    uncalibratedCvs[!is.na(subsetData_t$llr)],
-                                  na.rm=TRUE)
-    type1ErrorsUncalibrated[seqId] = type1ErrorUncalibrated
+    # type1Error = mean(subsetData_t$llr[!is.na(subsetData_t$llr)] > 
+    #                     calibratedCvs[!is.na(subsetData_t$llr)],
+    #                   na.rm=TRUE)
+    # type1Errors[seqId] = type1Error
+    # 
+    # type1ErrorUncalibrated = mean(subsetData_t$llr[!is.na(subsetData_t$llr)] > 
+    #                                 uncalibratedCvs[!is.na(subsetData_t$llr)],
+    #                               na.rm=TRUE)
+    # type1ErrorsUncalibrated[seqId] = type1ErrorUncalibrated
     
     # Now compute power
     
@@ -443,11 +601,21 @@ type1ErrorPowerSubsetOldExposureMaxSPRT <- function(methodEstimates,
         
       }
       
+      if(!is.na(imputedLlr[i]) & !is.na(calibratedCvs[i])) {
+        
+        powers[i,seqId] = ifelse(imputedLlr[i] > calibratedCvs[i], 1, 0)
+        
+      } else {
+        
+        powers[i,seqId] = NA
+        
+      }
+      
     }
     
-    powerMethod = mean(imputedLlr[!is.na(imputedLlr)] > calibratedCvs[!is.na(imputedLlr)],
-                       na.rm=TRUE)
-    powers[seqId] = powerMethod
+    # powerMethod = mean(imputedLlr[!is.na(imputedLlr)] > calibratedCvs[!is.na(imputedLlr)],
+    #                    na.rm=TRUE)
+    # powers[seqId] = powerMethod
     
   }
   
@@ -610,5 +778,44 @@ necessaryQuantities <- function(methodName, subset) {
     print("Method not recognized!")
     
   }
+  
+}
+
+proportionEvaluation <- function(signalMatrix) {
+  
+  n = nrow(signalMatrix)
+  tMax = ncol(signalMatrix)
+  
+  proportionStor <- rep(0, tMax)
+  
+  updatedSignalMatrix = signalMatrix
+  
+  #an outcome is a signal once detected for all time points after
+  for(t in 1:tMax) {
+    
+    #signals <- rep(0, n)
+    
+    # Consider submatrix with columns 1:t
+    
+    for(i in 1:n) {
+      
+      if(1 %in% signalMatrix[i,]) {
+        
+        firstOccurrenceOfSignal <- min(which(signalMatrix[i,] == 1))
+        updatedSignalMatrix[i,firstOccurrenceOfSignal:tMax] = 1
+        
+      } 
+      
+    }
+    
+  }
+  
+  for(t in 1:tMax) {
+    
+    proportionStor[t] = mean(updatedSignalMatrix[,t], na.rm=T)
+    
+  }
+  
+  return(proportionStor)
   
 }

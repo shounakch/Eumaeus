@@ -26,7 +26,10 @@ plotType1ErrorPower <- function(databaseId,
                                 allResults,
                                 analysisIds,
                                 exposureName,
-                                yVanish) {
+                                yVanish,
+                                yTextVanish,
+                                powerIntercept = 0.50,
+                                powerBreaks = seq(0,1,by=0.25)) {
   
   outputDf <- list()
   methodNames <- c("ConcurrentComparator_1-28Days", "SCCS", "HistoricalComparator", "CaseControl")
@@ -47,6 +50,8 @@ plotType1ErrorPower <- function(databaseId,
   maxTimePeriod <- max(outputDf$seqId)
   outputDf$Method <- outputDf$method
   
+  colorPalette <- wesanderson::wes_palette("Darjeeling1")[-4]
+  
   type1ErrorPlot <- ggplot(outputDf, aes(x = seqId, 
                                          y = calibratedType1Error, 
                                          group = Method)) +
@@ -54,11 +59,29 @@ plotType1ErrorPower <- function(databaseId,
     geom_point(size = 2) +
     geom_hline(aes(yintercept = 0.05), size = 2, linetype = "dashed") +
     scale_y_continuous("Type 1 Error, Calibrated", breaks = c(0, 0.05, seq(0.1, 0.2, by=0.05)), limits = c(0, 0.2)) +
-    scale_color_manual(values = wesanderson::wes_palette("Darjeeling1")[-4]) +
-    ggtitle(paste0(exposureName, ", ", databaseId)) + scale_x_continuous(breaks = 1:maxTimePeriod) +
+    scale_color_manual(values = colorPalette) +
+    scale_fill_manual(values = colorPalette) +
+    guides(
+      color = guide_legend(
+        override.aes = list(
+          shape = 15,  # Box shape for color legend
+          size = 10     # Size of the box
+        )
+      ),
+      fill = guide_legend(
+        override.aes = list(
+          shape = 15,  # Box shape for fill legend
+          size = 10     # Size of the box
+        )
+      )
+    ) +
+    ggtitle(exposureName) +
+    scale_x_continuous(breaks = 1:maxTimePeriod) +
     theme_minimal() +
     theme(text = element_text(size=20),
-          axis.text.y = element_text(margin = margin(r = 10)))
+          axis.text.y = element_text(size=20, margin = margin(r = 10)),
+          plot.title = element_text(hjust=0.1),
+          axis.text.x = element_text(size=20))
   
   #print(type1ErrorPlot)
   
@@ -68,27 +91,61 @@ plotType1ErrorPower <- function(databaseId,
     geom_line(aes(color=Method), size = 3) + 
     geom_point(size = 2) +
     geom_hline(aes(yintercept = 0.05), size = 2, linetype = "dashed") +
-    scale_y_continuous("Type 1 Error, Uncalibrated", breaks = c(0, 0.05, seq(0.1, 1, by=0.1)), limits = c(0, 1)) +
-    scale_color_manual(values = wesanderson::wes_palette("Darjeeling1")[-4]) +
-    ggtitle(paste0(exposureName, ", ", databaseId)) + scale_x_continuous(breaks = 1:maxTimePeriod) +
+    scale_y_continuous("Type 1 Error, Uncalibrated", breaks = c(0, 0.05, 0.1, 0.5, 1), limits = c(0, 1)) +
+    scale_color_manual(values = colorPalette) +
+    guides(
+      color = guide_legend(
+        override.aes = list(
+          shape = 15,  # Box shape for color legend
+          size = 10     # Size of the box
+        )
+      ),
+      fill = guide_legend(
+        override.aes = list(
+          shape = 15,  # Box shape for fill legend
+          size = 10     # Size of the box
+        )
+      )
+    ) +
+    ggtitle(exposureName) +
+    scale_x_continuous(breaks = 1:maxTimePeriod) +
     theme_minimal() +
     theme(text = element_text(size=20),
-          axis.text.y = element_text(margin = margin(r = 10)))
+          axis.text.y = element_text(size = 20, margin = margin(r = 10)),
+          plot.title = element_text(hjust=0.1),
+          axis.text.x = element_text(size=20))
   
   #print(type1ErrorPlotUncalibrated)
   
-  power2 <- ggplot(outputDf, aes(x = seqId,
+  power2 <- ggplot(outputDf, aes(x = seqId, 
                                  y = PowerTrueEffectSize2, 
                                  group = Method)) +
     geom_line(aes(color=Method), size = 3) + 
     geom_point(size = 2) +
-    geom_hline(aes(yintercept = 0.05), size = 2, linetype = "dashed") +
-    scale_y_continuous("Power, true effect size = 2", breaks = c(0, 0.05, seq(0.1, 1, by=0.1)), limits = c(0, 1)) +
-    scale_color_manual(values = wesanderson::wes_palette("Darjeeling1")[-4]) +
-    ggtitle(paste0(exposureName, ", ", databaseId)) + scale_x_continuous(breaks = 1:maxTimePeriod) +
+    geom_hline(aes(yintercept = powerIntercept), size = 2, linetype = "dotted") +
+    scale_y_continuous("Power of detection", breaks = powerBreaks, limits = c(0, 1)) +
+    scale_color_manual(values = colorPalette) +
+    guides(
+      color = guide_legend(
+        override.aes = list(
+          shape = 15,  # Box shape for color legend
+          size = 10     # Size of the box
+        )
+      ),
+      fill = guide_legend(
+        override.aes = list(
+          shape = 15,  # Box shape for fill legend
+          size = 10     # Size of the box
+        )
+      )
+    ) +
+    ggtitle(exposureName) +
+    scale_x_continuous(breaks = 1:maxTimePeriod) +
     theme_minimal() +
     theme(text = element_text(size=20),
-          axis.text.y = element_text(margin = margin(r = 10)))
+          axis.text.y = element_text(size = 20, margin = margin(r = 10)),
+          plot.title = element_text(hjust=0.1),
+          axis.text.x = element_text(size=20))
   
   #print(power2)
   
@@ -97,25 +154,47 @@ plotType1ErrorPower <- function(databaseId,
                                  group = Method)) +
     geom_line(aes(color=Method), size = 3) + 
     geom_point(size = 2) +
-    geom_hline(aes(yintercept = 0.05), size = 2, linetype = "dashed") +
-    scale_y_continuous("Power, true effect size = 4", breaks = c(0, 0.05, seq(0.1, 1, by=0.1)), limits = c(0, 1)) +
-    scale_color_manual(values = wesanderson::wes_palette("Darjeeling1")[-4]) +
-    ggtitle(paste0(exposureName, ", ", databaseId)) + scale_x_continuous(breaks = 1:maxTimePeriod) +
+    geom_hline(aes(yintercept = powerIntercept), size = 2, linetype = "dotted") +
+    scale_y_continuous("Power of detection", breaks = powerBreaks, limits = c(0, 1)) +
+    scale_color_manual(values = colorPalette) +
+    guides(
+      color = guide_legend(
+        override.aes = list(
+          shape = 15,  # Box shape for color legend
+          size = 10     # Size of the box
+        )
+      ),
+      fill = guide_legend(
+        override.aes = list(
+          shape = 15,  # Box shape for fill legend
+          size = 10     # Size of the box
+        )
+      )
+    ) +
+    ggtitle(exposureName) +
+    scale_x_continuous(breaks = 1:maxTimePeriod) +
     theme_minimal() +
     theme(text = element_text(size=20),
-          axis.text.y = element_text(margin = margin(r = 10)))
+          axis.text.y = element_text(size = 20, margin = margin(r = 10)),
+          plot.title = element_text(hjust=0.1),
+          axis.text.x = element_text(size=20))
   
   if(yVanish) {
 
-    type1ErrorPlot <- type1ErrorPlot + theme(axis.text.y = element_blank(),   # Remove y-axis text
-                                             axis.title.y = element_blank())
-    type1ErrorPlotUncalibrated <- type1ErrorPlotUncalibrated + theme(axis.text.y = element_blank(),   # Remove y-axis text
-                                                                     axis.title.y = element_blank())
-    power2 <- power2 + theme(axis.text.y = element_blank(),   # Remove y-axis text
-                             axis.title.y = element_blank())
-    power4 <- power4 + theme(axis.text.y = element_blank(),   # Remove y-axis text
-                             axis.title.y = element_blank())
+    type1ErrorPlot <- type1ErrorPlot + theme(axis.title.y = element_blank())
+    type1ErrorPlotUncalibrated <- type1ErrorPlotUncalibrated + theme(axis.title.y = element_blank())
+    power2 <- power2 + theme(axis.title.y = element_blank())
+    power4 <- power4 + theme(axis.title.y = element_blank())
 
+  }
+  
+  if(yTextVanish) {
+    
+    type1ErrorPlot <- type1ErrorPlot + theme(axis.text.y = element_blank())
+    type1ErrorPlotUncalibrated <- type1ErrorPlotUncalibrated + theme(axis.text.y = element_blank())
+    power2 <- power2 + theme(axis.text.y = element_blank())
+    power4 <- power4 + theme(axis.text.y =  element_blank())
+    
   }
   
   #print(power4)

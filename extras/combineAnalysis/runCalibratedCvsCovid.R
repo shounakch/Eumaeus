@@ -11,7 +11,7 @@ library(ggplot2)
 #exposure 21216 - Name: COVID-19 vaccination (BNT126b2)
 #exposure 21217 - Name: COVID-19 vaccination (mRNA-1273)
 
-databaseId = "IBM_MDCD"
+databaseId = "OptumEhr"
 exposureIds = c(21216, 21217)
 maxTimePeriod = 7 #depends on exposureId
 analysisIds = list("HistoricalComparatorAnalysisId" = 4,
@@ -22,7 +22,7 @@ exposureNames = c("COVID-19 vaccination (BNT126b2)",
                   "COVID-19 vaccination (mRNA-1273)")
 
 exposureIndex = 1
-trueEffectSize = 4
+trueEffectSize = 2
 
 exposureId = exposureIds[exposureIndex]
 exposureName = exposureNames[exposureIndex]
@@ -32,7 +32,8 @@ plotObject <- plotType1ErrorAndPowerAcrossTime(databaseId,
                                                trueEffectSize,
                                                analysisIds,
                                                maxTimePeriod,
-                                               exposureName)
+                                               exposureName,
+                                               force=rep(F, 4))
 
 #### figure out why SCCS/Case Control type 1 errors are so high even after calibration!!!!!!
 
