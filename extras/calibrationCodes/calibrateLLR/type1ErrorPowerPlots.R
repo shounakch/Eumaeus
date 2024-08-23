@@ -29,7 +29,8 @@ plotType1ErrorPower <- function(databaseId,
                                 yVanish,
                                 yTextVanish,
                                 powerIntercept = 0.50,
-                                powerBreaks = seq(0,1,by=0.25)) {
+                                powerBreaks = seq(0,1,by=0.25),
+                                colorPalette = wesanderson::wes_palette("Darjeeling1")[-4]) {
   
   outputDf <- list()
   methodNames <- c("ConcurrentComparator_1-28Days", "SCCS", "HistoricalComparator", "CaseControl")
@@ -49,8 +50,6 @@ plotType1ErrorPower <- function(databaseId,
   outputDf$method[outputDf$method == "ConcurrentComparator_1-28Days"] = "ConcurrentComparator"
   maxTimePeriod <- max(outputDf$seqId)
   outputDf$Method <- outputDf$method
-  
-  colorPalette <- wesanderson::wes_palette("Darjeeling1")[-4]
   
   type1ErrorPlot <- ggplot(outputDf, aes(x = seqId, 
                                          y = calibratedType1Error, 
