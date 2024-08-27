@@ -11,3 +11,4 @@ atlasId,atlasName,cohortId,name
 20503,HPV exclusion cohort,20503,HpvExclusion
 21217,Zoster exclusion cohort,21217,ZosterExclusion
 21218,H1N1 exclusion cohort,21218,H1N1Exclusion
+21223,COVID-19 exclusion cohort,21223,Covid19Exclusion
