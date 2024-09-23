@@ -17,8 +17,6 @@
 clusterFunction <- function(outcomeId,
                             settings) {
   
-  #ccData = readRDS(file = paste0("E:/eumaeusTest_optum_ehr_Shounak/ConcurrentComparator/e_21216/", ccDataName, ".RData"))
-  
   ccDataName = settings$ccDataName
   analysisId = settings$analysisId
   exposureId = settings$exposureId
@@ -28,15 +26,19 @@ clusterFunction <- function(outcomeId,
   tPeriod = settings$tPeriod
   periodFolder = settings$periodFolder
   
-  #loadDir = paste0("E:/eumaeusTest_", dataName, "_Shounak/ConcurrentComparator/e_", baseExposureId, "/ccData_e_", exposureId, "_t", analysisId, ".zip")
-  
-  loadDir = paste0(outputFolder, "/ccData_e_", exposureId, "_t", tPeriod, ".zip")
+  loadDir = paste0(outputFolder, 
+                   "/ccData_e_", 
+                   exposureId, 
+                   "_t", 
+                   tPeriod, 
+                   ".zip")
   
   ccDataObject = Andromeda::loadAndromeda(fileName = loadDir)
   class(ccDataObject) <- "ConcurrentComparatorData"
   attr(class(ccDataObject), "package") <- "ConcurrentComparator"
   
-  population <- ConcurrentComparator:::createStudyPopulation(ccDataObject, outcomeId = outcomeId)
+  population <- ConcurrentComparator:::createStudyPopulation(ccDataObject, 
+                                                             outcomeId = outcomeId)
   
   fit <- ConcurrentComparator:::fitOutcomeModel(population = population)
   
@@ -64,21 +66,6 @@ clusterFunction <- function(outcomeId,
                  fit$outcomeStatistics$subjects[1],
                  fit$outcomeStatistics$outcomes[1],
                  fit$outcomeStatistics$kPtYrs[1])
-  
-  # output = c(exposureId,
-  #            baseExposureId,
-  #            outcomeId,
-  #            analysisId,
-  #            fit$outcomeStatistics$subjects[2],
-  #            fit$outcomeStatistics$outcomes[2],
-  #            fit$outcomeStatistics$kPtYrs[2],
-  #            fit$outcomeStatistics$subjects[1],
-  #            fit$outcomeStatistics$outcomes[1],
-  #            fit$outcomeStatistics$kPtYrs[1],
-  #            fit$treatmentEstimate$logRr,
-  #            fit$treatmentEstimate$logLb95,
-  #            fit$treatmentEstimate$logUb95,
-  #            fit$treatmentEstimate$seLogRr)
   
   if((sum(fit$outcomeStatistics$outcomes) == 0) || (fit$status != "OK")) {
     
@@ -119,16 +106,16 @@ runConcurrentComparator <- function(connectionDetails,
   
   start <- Sys.time()
   
-  # concurrentComparatorFolder <- file.path(outputFolder, "ConcurrentComparator")
-  #concurrentComparatorFolder <- file.path(outputFolder, "ConcurrentComparator_1-28Days")
-  concurrentComparatorFolder <- file.path(outputFolder, "ConcurrentComparator_MyoPeri")
+  #concurrentComparatorFolder <- file.path(outputFolder, "ConcurrentComparator")
+  concurrentComparatorFolder <- file.path(outputFolder, "ConcurrentComparator_1-28Days")
+  #concurrentComparatorFolder <- file.path(outputFolder, "ConcurrentComparator_1-28Days_MyoPeri")
   
   if (!file.exists(concurrentComparatorFolder))
     dir.create(concurrentComparatorFolder)
   
   #concurrentComparatorSummaryFile <- file.path(outputFolder, "ConcurrentComparatorSummary.csv")
-  #concurrentComparatorSummaryFile <- file.path(outputFolder, "ConcurrentComparatorSummary_1-28Days.csv")
-  concurrentComparatorSummaryFile <- file.path(outputFolder, "ConcurrentComparatorSummary_MyoPeri.csv")
+  concurrentComparatorSummaryFile <- file.path(outputFolder, "ConcurrentComparatorSummary_1-28Days.csv")
+  #concurrentComparatorSummaryFile <- file.path(outputFolder, "ConcurrentComparatorSummary_1-28Days_MyoPeri.csv")
   
   #if (!file.exists(concurrentComparatorSummaryFile)) {
   if(TRUE) {
@@ -148,11 +135,6 @@ runConcurrentComparator <- function(connectionDetails,
     ParallelLogger::clusterRequire(cluster, "Eumaeus")
     ParallelLogger::clusterRequire(cluster, "Andromeda")
     
-    #baseExposureId <- baseExposureIds[8] #to comment
-    #baseExposureIds = c(21216, 21217)
-    
-    baseExposureIds = c(21184, 21185, 21214, 21215, 21198, 21183) #without covid
-    
     for (baseExposureId in baseExposureIds) {
       
       exposures <- exposureCohorts %>%
@@ -167,17 +149,12 @@ runConcurrentComparator <- function(connectionDetails,
         dir.create(exposureFolder)
       
       timePeriods <- Eumaeus:::splitTimePeriod(startDate = controls$startDate[1], endDate = controls$endDate[1])
-      #i <- 1
-      #for (i in 1:nrow(timePeriods)) {
       for(i in nrow(timePeriods):1) {
         periodEstimatesFile <- file.path(exposureFolder, sprintf("estimates_t%d.csv", timePeriods$seqId[i]))
         
         if (!file.exists(periodEstimatesFile)) {
-        #if (!file.exists(periodEstimatesFile) || (length(exposures$exposureId) > 1)) {
-        #if(TRUE) {
-
+          
           periodEstimates <- list()
-          #exposureId <- exposures$exposureId[1]
           
           for(exposureId in exposures$exposureId) {
             
@@ -207,8 +184,8 @@ runConcurrentComparator <- function(connectionDetails,
             #                                                   startDate = as.character(timePeriods$startDate[i]),
             #                                                   endDate = as.character(timePeriods$endDate[i]),
             #                                                   exposureId = exposureId,
+            #                                                   analysisId = 3, #analysisId = 3 for 1-28 days vs 29-56 days
             #                                                   outcomeIds = controls$outcomeId,
-            #                                                   analysisId = 3, #analysisId = 2 for 1-21 days vs 22-42 days
             #                                                   outputFolder = exposureFolder,
             #                                                   cluster = cluster,
             #                                                   dataName = dataName,
@@ -223,8 +200,8 @@ runConcurrentComparator <- function(connectionDetails,
                                                               startDate = as.character(timePeriods$startDate[i]),
                                                               endDate = as.character(timePeriods$endDate[i]),
                                                               exposureId = exposureId,
-                                                              outcomeIds = 668,
-                                                              analysisId = 2, #analysisId = 2 for 1-21 days vs 22-42 days
+                                                              outcomeIds = 2001,
+                                                              analysisId = 3, #analysisId = 2 for 1-21 days vs 22-42 days
                                                               outputFolder = exposureFolder,
                                                               cluster = cluster,
                                                               dataName = dataName,
@@ -235,21 +212,6 @@ runConcurrentComparator <- function(connectionDetails,
             
           }
           
-          # for (exposureId in exposures$exposureId) {
-          #   ParallelLogger::logInfo(sprintf("Computing concurrent comparator estimates for exposure %s and period: %s", exposureId, timePeriods$label[i]))
-          #   estimates <- computeConcurrentComparatorEstimates(connectionDetails = connectionDetails,
-          #                                                     cdmDatabaseSchema = cdmDatabaseSchema,
-          #                                                     cohortDatabaseSchema = cohortDatabaseSchema,
-          #                                                     cohortTable = cohortTable,
-          #                                                     startDate = as.character(timePeriods$startDate[i]),
-          #                                                     endDate = as.character(timePeriods$endDate[i]),
-          #                                                     exposureId = exposureId,
-          #                                                     outcomeIds = controls$outcomeId,
-          #                                                     analysisId = i,
-          #                                                     outputFolder = exposureFolder)
-          #   periodEstimates[[length(periodEstimates) + 1]] <- estimates
-          # }
-
           periodEstimates <- bind_rows(periodEstimates)
           readr::write_csv(periodEstimates, periodEstimatesFile)
         } else {
@@ -266,7 +228,7 @@ runConcurrentComparator <- function(connectionDetails,
     allEstimates <- bind_rows(allEstimates)  
     readr::write_csv(allEstimates, concurrentComparatorSummaryFile)
     
-    #ParallelLogger::stopCluster(cluster)
+    ParallelLogger::stopCluster(cluster)
     
   }
   
@@ -303,67 +265,55 @@ computeConcurrentComparatorEstimates <- function(connectionDetails,
   
   ccDataFileName = paste0(outputFolder, "/ccData_e_", exposureId, "_t", tPeriod, ".zip")
   
+  if(analysisId == 2) {
+    
+    timeAtRiskStart = 1
+    timeAtRiskEnd = 21
+    washoutTime = 22
+    
+  } else if(analysisId == 3) {
+    
+    timeAtRiskStart = 1
+    timeAtRiskEnd = 28
+    washoutTime = 29
+    
+  } else {
+    
+    stop("CC analysisId not recognized!")
+    
+  }
+  
+  if(outcomeIds == c(668)) {
+    
+    outcomeTable = cohortTable
+    
+  } else {
+    
+    outcomeTable = "condition_era"
+    
+  }
+  
   if(!file.exists(ccDataFileName)) {
-
-    #TaR = 1-21 days, analysisId = 2, myo/peri
+    
+    #TaR = 1-28 days, analysisId = 3, myo/peri
     ccData <- ConcurrentComparator:::getDbConcurrentComparatorData(connectionDetails = connectionDetails,
                                                                    cdmDatabaseSchema = cdmDatabaseSchema,
                                                                    targetId = exposureId,
-                                                                   #outcomeIds = 668,
                                                                    outcomeIds = outcomeIds,
                                                                    studyStartDate = startDate,
-                                                                   #studyEndDate = "2021-06-30",
                                                                    studyEndDate = endDate,
                                                                    exposureDatabaseSchema = cohortDatabaseSchema,
                                                                    exposureTable = cohortTable,
                                                                    outcomeDatabaseSchema = cohortDatabaseSchema,
-                                                                   outcomeTable = cohortTable,    #for outcome of interest
+                                                                   outcomeTable = outcomeTable,
+                                                                   # outcomeTable = cohortTable,    #for outcome of interest
                                                                    #outcomeTable = "condition_era", #for negative controls
-                                                                   timeAtRiskStart = 1,
-                                                                   timeAtRiskEnd = 21,
-                                                                   washoutTime = 22)
-        
-    #TaR = 1-21 days, analysisId = 2
-    # ccData <- ConcurrentComparator:::getDbConcurrentComparatorData(connectionDetails = connectionDetails,
-    #                                                                cdmDatabaseSchema = cdmDatabaseSchema,
-    #                                                                targetId = exposureId,
-    #                                                                #outcomeIds = 668,
-    #                                                                outcomeIds = outcomeIds,
-    #                                                                studyStartDate = startDate,
-    #                                                                #studyEndDate = "2021-06-30",
-    #                                                                studyEndDate = endDate,
-    #                                                                exposureDatabaseSchema = cohortDatabaseSchema,
-    #                                                                exposureTable = cohortTable,
-    #                                                                outcomeDatabaseSchema = cohortDatabaseSchema,
-    #                                                                #outcomeTable = cohortTable,    #for outcome of interest
-    #                                                                outcomeTable = "condition_era", #for negative controls
-    #                                                                timeAtRiskStart = 1,
-    #                                                                timeAtRiskEnd = 21,
-    #                                                                washoutTime = 22)
-    
-    #TaR = 1-28 days, analysisId = 3, for legacy comparison
-    # ccData <- ConcurrentComparator:::getDbConcurrentComparatorData(connectionDetails = connectionDetails,
-    #                                                                cdmDatabaseSchema = cdmDatabaseSchema,
-    #                                                                targetId = exposureId,
-    #                                                                #outcomeIds = 668,
-    #                                                                outcomeIds = outcomeIds,
-    #                                                                studyStartDate = startDate,
-    #                                                                #studyEndDate = "2021-06-30",
-    #                                                                studyEndDate = endDate,
-    #                                                                exposureDatabaseSchema = cohortDatabaseSchema,
-    #                                                                exposureTable = cohortTable,
-    #                                                                outcomeDatabaseSchema = cohortDatabaseSchema,
-    #                                                                #outcomeTable = cohortTable,    #for outcome of interest
-    #                                                                outcomeTable = "condition_era", #for negative controls
-    #                                                                timeAtRiskStart = 1,
-    #                                                                timeAtRiskEnd = 28,
-    #                                                                washoutTime = 29)
-    
-    #saveDir = paste0("E:/eumaeusTest_", dataName, "_Shounak/ConcurrentComparator/e_", baseExposureId, "/ccData_e_", exposureId, "_t", analysisId, ".zip")
+                                                                   timeAtRiskStart = timeAtRiskStart,
+                                                                   timeAtRiskEnd = timeAtRiskEnd,
+                                                                   washoutTime = washoutTime)
     
     saveDir = paste0(outputFolder, "/ccData_e_", exposureId, "_t", tPeriod, ".zip")
     
-    #Andromeda::saveAndromeda(ccData, fileName = paste0("E:/eumaeusTest_optum_ehr_Shounak/ConcurrentComparator/e_", exposureId, "/ccData_t", analysisId, ".zip"), maintainConnection = TRUE)
     Andromeda::saveAndromeda(ccData, fileName = saveDir, maintainConnection = TRUE)
     
   } else {
@@ -371,13 +321,6 @@ computeConcurrentComparatorEstimates <- function(connectionDetails,
     ParallelLogger::logInfo(sprintf("cc Data file already exists"))
     
   }
-  # else { #probably not needed
-  #   
-  #   ccData = Andromeda::loadAndromeda(fileName = ccDataFileName)
-  #   class(ccData) <- "ConcurrentComparatorData"
-  #   attr(class(ccData), "package") <- "ConcurrentComparator"
-  #   
-  # }
   
   settings = list("ccDataName" = paste0("ccData_e_", exposureId, "_t", tPeriod),
                   "analysisId" = analysisId,
